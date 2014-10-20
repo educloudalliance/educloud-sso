@@ -1,0 +1,162 @@
+body {
+	background-color: rgb(225, 229, 236);
+	font-family: sans-serif;
+}
+
+
+.wrapper {
+	width: 500px;
+	height: 600px;
+	position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+	margin: auto;
+
+}
+
+.logo {
+	text-align: center;
+	position: relative;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+	margin-bottom: 20px;
+}
+
+.logo img {
+	width: 86px;
+	height: 89px;
+
+}
+
+.ssp-logo {
+	text-align: center;
+	margin-top: 20px;
+	position: relative;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+		
+}
+
+
+
+.social-connect {
+	
+  	border: 1px solid #F1F1F1;
+	background-color: #fff;
+	width: 500px;
+	height: 250px;
+	position: relative;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+	margin: auto;
+
+}
+
+.social-connect h2 {
+	font-size: 23px;
+	text-align: center;
+	margin-top: 20px;
+	color: #7a8195;
+}
+
+.social-connect p {
+	color: #aeb8bc;
+	font-size: 13px;
+	text-align: center;
+	margin-top: 50px;
+	float: left;
+}
+
+
+.social-buttons {
+	display: block;
+	margin-top: 50px;
+	width: 50%;
+    margin: auto;
+	margin-left: 115px;
+	margin-top: 50px;
+
+}
+
+#button-facebook {
+	width: 48px;
+	height: 48px;
+	background-image: url('img/webicon-facebook.png');
+	background-repeat: none;
+	border: none;
+	color:transparent;
+	cursor: pointer;
+
+}
+
+#button-twitter {
+	width: 48px;
+	height: 48px;
+	background-image: url('img/webicon-twitter.png');
+	background-repeat: none;
+	border: none;
+	color:transparent;
+	cursor: pointer;
+	
+}
+
+#button-linkedin {
+	width: 48px;
+	height: 48px;
+	background-image: url('img/webicon-linkedin.png');
+	background-repeat: none;
+	border: none;
+	color:transparent;
+	cursor: pointer;
+	
+}
+
+/* LISTS */
+ul {
+	list-style-type: none;
+	
+}
+
+li {
+	margin-left: 10px;
+	display: inline;
+}
+
+dt {
+	font-weight: bold;
+}
+
+#languagebar {
+	width: 50%;
+	margin: auto;
+	margin-top: 20px;
+	margin-left: 147px;
+}
+
+#languagebar a:link, #languagebar a:visited {
+	text-decoration: none;
+	color: #777;
+	font-weight: normal;
+	padding-left: 10px;
+
+}
+
+#languagebar a:after {
+	content: ' ';
+}
+
+
+#languagebar a:hover {
+	text-decoration: none;
+	color: #333;
+	border-bottom: 1px solid #333;
+	
+}
