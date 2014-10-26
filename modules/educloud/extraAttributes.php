@@ -36,11 +36,7 @@ function getRoleAttributes($authmethod, $smID){
             "educloud.oid" => $data['username'], // OID is username in RoleDB
             "educloud.data" => $database64
         );
-        //foreach($data['attributes'] AS $name => $value) {
-        //    if(in_array((string)$name, $lms_array)) {
-        //        $extraAttributes['educloud.'.$name] = implode($value);
-        //    }
-        //}
+        
         return $extraAttributes;
     } catch(Exception $e) {
         echo 'Caught exception: ',  $e->getMessage(), "\n";

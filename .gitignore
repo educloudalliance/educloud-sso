@@ -13,3 +13,4 @@ lib/
 vendor/
 schemas/
 modules/educloud/roledb_config.php
+educloud-auth.sublime*
