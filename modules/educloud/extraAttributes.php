@@ -34,7 +34,7 @@ function getRoleAttributes($authmethod, $smID){
         // Add here all the attributes you want to pass
         $extraAttributes = array(
             "educloud.oid" => $data['username'], // OID is username in RoleDB
-            "educloud.data" => $database64
+            "educloud.data" => $database64, // RoleDB JSON response base64 encoded
         );
         
         return $extraAttributes;

@@ -1,5 +1,5 @@
 <?php
-
+require_once('JWT.php');
 require_once('extraAttributes.php');
 
 /**
@@ -63,7 +63,7 @@ class sspmod_authjwt_Auth_Source_jwt extends SimpleSAML_Auth_Source {
 
 		// Extra attributes
 		$authmethod = 'pedanet';
-		$pedanetID = 'vjyrkka';
+		$pedanetID = 'vjyrkka'; // This should probably come after user login at Peda.net
 		$extraAttributes = getRoleAttributes($authmethod, $pedanetID);
 		
 		if($extraAttributes != NULL) {
