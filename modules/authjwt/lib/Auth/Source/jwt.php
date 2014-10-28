@@ -3,7 +3,7 @@ require_once('JWT.php');
 require_once('extraAttributes.php');
 
 /**
- * Authenticate using Twitter.
+ * Authenticate using JWT.
  *
  * @author Ville Jyrkkä, Sampo Software Oy
  * @package educloud-sso
@@ -20,8 +20,9 @@ class sspmod_authjwt_Auth_Source_jwt extends SimpleSAML_Auth_Source {
 	 */
 	const AUTHID = 'jwt:AuthId';
 
+	private $user;
 	private $key;
-	private $token;
+	private $url;
 
 
 	/**
@@ -39,8 +40,9 @@ class sspmod_authjwt_Auth_Source_jwt extends SimpleSAML_Auth_Source {
 
 		$configObject = SimpleSAML_Configuration::loadFromArray($config, 'authsources[' . var_export($this->authId, TRUE) . ']');
 
+		$this->user = $configObject->getString('user');
 		$this->key = $configObject->getString('key');
-		$this->token = $configObject->getArray('token');
+		$this->url = $configObject->getString('url');
 	}
 
 
@@ -55,16 +57,36 @@ class sspmod_authjwt_Auth_Source_jwt extends SimpleSAML_Auth_Source {
 		/* We are going to need the authId in order to retrieve this authentication source later. */
 		$state[self::AUTHID] = $this->authId;
 		
-		$stateID = SimpleSAML_Auth_State::saveState($state, self::STAGE_INIT);
-		
-		/* REST API call to LMS and JWT token decode goes here */
+		$returnTo = 'ireallydontknow';
+		// Get userdata
+		$this->getUserInfo($this->url, $this->key, $returnTo, $state); //TODO: how to get simplesaml return link
+	}
 
+	/**
+	 * Get user info
+	 * 1. Redirect to $url with $returnTo parameter. 
+	 * 2. Decode JWT Token with $key, parse pedanet.user value
+	 *
+	 * @param string $url JWT auth url
+	 * @param string $key JWT key for decode
+	 * @param string $returnTo Redirect URL
+	 * @param array  &$state Authentication state info
+	 */
+	public function getUserInfo($url, $key, $returnTo, &$state) {
+		
+		$stateID = SimpleSAML_Auth_State::saveState($state, self::STAGE_INIT);
+
+		/*
+		* 1. Redirect to $url with $returnTo parameter. 
+	 	* 2. Decode JWT Token with $key, parse pedanet.user value
+		*/
+
+		// TODO: create add extraAttributes function
 		$attributes = array();
 
 		// Extra attributes
-		$authmethod = 'pedanet';
 		$pedanetID = 'vjyrkka'; // This should probably come after user login at Peda.net
-		$extraAttributes = getRoleAttributes($authmethod, $pedanetID);
+		$extraAttributes = getRoleAttributes($this->authId, $pedanetID);
 		
 		if($extraAttributes != NULL) {
 			// Copy paste this to add attributes
@@ -75,65 +97,6 @@ class sspmod_authjwt_Auth_Source_jwt extends SimpleSAML_Auth_Source {
 		$state['Attributes'] = $attributes;
 
 		SimpleSAML_Auth_State::loadState($stateID, self::STAGE_INIT);
-		SimpleSAML_Auth_Source::completeAuth($state);
+		SimpleSAML_Auth_Source::completeAuth($state);	
 	}
-	
-	/*
-	public function finalStep(&$state) {
-		$requestToken = $state['authtwitter:authdata:requestToken'];
-		$parameters = array();
-
-		if (!isset($_REQUEST['oauth_token'])) {
-			throw new SimpleSAML_Error_BadRequest("Missing oauth_token parameter.");
-		}
-		if ($requestToken->key !== (string)$_REQUEST['oauth_token']) {
-			throw new SimpleSAML_Error_BadRequest("Invalid oauth_token parameter.");
-		}
-
-		if (!isset($_REQUEST['oauth_verifier'])) {
-			throw new SimpleSAML_Error_BadRequest("Missing oauth_verifier parameter.");
-		}
-		$parameters['oauth_verifier'] = (string)$_REQUEST['oauth_verifier'];
-		
-		$consumer = new sspmod_oauth_Consumer($this->key, $this->secret);
-		
-		SimpleSAML_Logger::debug("oauth: Using this request token [" . 
-			$requestToken->key . "] with the secret [" . $requestToken->secret . "]");
-
-		// Replace the request token with an access token
-		$accessToken = $consumer->getAccessToken('https://api.twitter.com/oauth/access_token', $requestToken, $parameters);
-		SimpleSAML_Logger::debug("Got an access token from the OAuth service provider [" . 
-			$accessToken->key . "] with the secret [" . $accessToken->secret . "]");
-			
-		$userdata = $consumer->getUserInfo('https://api.twitter.com/1.1/account/verify_credentials.json', $accessToken);
-		
-		if (!isset($userdata['id_str']) || !isset($userdata['screen_name'])) {
-			throw new SimpleSAML_Error_AuthSource($this->authId, 'Authentication error: id_str and screen_name not set.');
-		}
-
-		$attributes = array();
-		foreach($userdata AS $key => $value) {
-			if (is_string($value))
-				$attributes['twitter.' . $key] = array((string)$value);
-		}
-		
-		$attributes['twitter_at_screen_name'] = array('@' . $userdata['screen_name']);
-		$attributes['twitter_screen_n_realm'] = array($userdata['screen_name'] . '@twitter.com');
-		$attributes['twitter_targetedID'] = array('http://twitter.com!' . $userdata['id_str']);
-
-		// Extra attributes
-		$authmethod = 'twitter';
-		$twitterID = $attributes['twitter_at_screen_name'][0]; // This has to be attribute that is collected from roleDB users.
-		$extraAttributes = getRoleAttributes($authmethod, $twitterID);
-		
-		if($extraAttributes != NULL) {
-			// Copy paste this to add attributes
-			$attributes['educloud.oid'] = array($extraAttributes['educloud.oid']);
-			$attributes['educloud.data'] = array($extraAttributes['educloud.data']);
-		}
-
-		$state['Attributes'] = $attributes;
-	}
-	*/
-
 }
