@@ -53,40 +53,54 @@ class sspmod_authjwt_Auth_Source_jwt extends SimpleSAML_Auth_Source {
 	 */
 	public function authenticate(&$state) {
 		assert('is_array($state)');
-
 		/* We are going to need the authId in order to retrieve this authentication source later. */
 		$state[self::AUTHID] = $this->authId;
-		
-		$returnTo = 'ireallydontknow';
-		// Get userdata
-		$this->getUserInfo($this->url, $this->key, $returnTo, $state); //TODO: how to get simplesaml return link
+
+		$stateID = SimpleSAML_Auth_State::saveState($state, self::STAGE_INIT);
+
+		if(isset($_GET["jwt"])) {
+			// When LMS redirects back with jwt parameter set, we decode JWT
+			$attributes = $this->decodeJWT($_GET["jwt"], $this->key);
+			$state['Attributes'] = $attributes;
+
+			SimpleSAML_Auth_State::loadState($stateID, self::STAGE_INIT);
+			SimpleSAML_Auth_Source::completeAuth($state);
+		} else {
+			// First time redirect to login url
+			$this->doRedirect($this->url);
+		}
 	}
 
 	/**
-	 * Get user info
-	 * 1. Redirect to $url with $returnTo parameter. 
-	 * 2. Decode JWT Token with $key, parse pedanet.user value
+	 * Decode JWT and get role attributes for user ID.
 	 *
-	 * @param string $url JWT auth url
-	 * @param string $key JWT key for decode
-	 * @param string $returnTo Redirect URL
-	 * @param array  &$state Authentication state info
+	 * @param string $url Login url where to redirect
 	 */
-	public function getUserInfo($url, $key, $returnTo, &$state) {
+	public function doRedirect($url) {
+		// Get current URL where to return back.
+		$returnTo = 'https://'.$_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"];
+		$queryURL = $url.'?return_to='.$returnTo;
+		// Redirect to login
+		header("Location: ".$queryURL);
+		exit();
+	}
+
+	/**
+	 * Decode JWT and get role attributes for user ID.
+	 *
+	 * @param string $jwt JWT token
+	 * @param string $key JWT key for decode
+	 */
+	public function decodeJWT($jwt, $key) {
+        // Decode JWT
+        $decoded = JWT::decode($jwt, $key);
 		
-		$stateID = SimpleSAML_Auth_State::saveState($state, self::STAGE_INIT);
-
-		/*
-		* 1. Redirect to $url with $returnTo parameter. 
-	 	* 2. Decode JWT Token with $key, parse pedanet.user value
-		*/
-
-		// TODO: create add extraAttributes function
 		$attributes = array();
 
 		// Extra attributes
-		$pedanetID = 'vjyrkka'; // This should probably come after user login at Peda.net
-		$extraAttributes = getRoleAttributes($this->authId, $pedanetID);
+		$user = $this->user;
+		$userID = $decoded->$user; // Get userID from the decoded JWT
+		$extraAttributes = getRoleAttributes($this->authId, $userID);
 		
 		if($extraAttributes != NULL) {
 			// Copy paste this to add attributes
@@ -94,9 +108,6 @@ class sspmod_authjwt_Auth_Source_jwt extends SimpleSAML_Auth_Source {
 			$attributes['educloud.data'] = array($extraAttributes['educloud.data']);
 		}
 
-		$state['Attributes'] = $attributes;
-
-		SimpleSAML_Auth_State::loadState($stateID, self::STAGE_INIT);
-		SimpleSAML_Auth_Source::completeAuth($state);	
+		return $attributes;
 	}
 }
