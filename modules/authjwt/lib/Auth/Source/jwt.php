@@ -58,28 +58,9 @@ class sspmod_authjwt_Auth_Source_jwt extends SimpleSAML_Auth_Source {
 
 		$stateID = SimpleSAML_Auth_State::saveState($state, self::STAGE_INIT);
 
-		if(isset($_GET["jwt"])) {
-			// When LMS redirects back with jwt parameter set, we decode JWT
-			$attributes = $this->decodeJWT($_GET["jwt"], $this->key);
-			$state['Attributes'] = $attributes;
-
-			SimpleSAML_Auth_State::loadState($stateID, self::STAGE_INIT);
-			SimpleSAML_Auth_Source::completeAuth($state);
-		} else {
-			// First time redirect to login url
-			$this->doRedirect($this->url);
-		}
-	}
-
-	/**
-	 * Decode JWT and get role attributes for user ID.
-	 *
-	 * @param string $url Login url where to redirect
-	 */
-	public function doRedirect($url) {
 		// Get current URL where to return back.
-		$returnTo = 'https://'.$_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"];
-		$queryURL = $url.'?return_to='.$returnTo;
+		$linkback = SimpleSAML_Module::getModuleURL('authjwt/linkback.php', array('AuthState' => $stateID));
+		$queryURL = $this->url.'?return_to='.$linkback;
 		// Redirect to login
 		header("Location: ".$queryURL);
 		exit();
@@ -89,17 +70,19 @@ class sspmod_authjwt_Auth_Source_jwt extends SimpleSAML_Auth_Source {
 	 * Decode JWT and get role attributes for user ID.
 	 *
 	 * @param string $jwt JWT token
-	 * @param string $key JWT key for decode
+	 * @param string &$state authentication state
 	 */
-	public function decodeJWT($jwt, $key) {
+	public function decodeJWT($jwt, &$state) {
         // Decode JWT
-        $decoded = JWT::decode($jwt, $key);
+        $decoded = JWT::decode($jwt, $this->key);
 		
 		$attributes = array();
 
-		// Extra attributes
+		// Get JWT attributes
 		$user = $this->user;
 		$userID = $decoded->$user; // Get userID from the decoded JWT
+
+		// EduCloud Role DB API call to get extraAttributes
 		$extraAttributes = getRoleAttributes($this->authId, $userID);
 		
 		if($extraAttributes != NULL) {
@@ -108,6 +91,7 @@ class sspmod_authjwt_Auth_Source_jwt extends SimpleSAML_Auth_Source {
 			$attributes['educloud.data'] = array($extraAttributes['educloud.data']);
 		}
 
-		return $attributes;
+		$state['Attributes'] = $attributes;
+
 	}
 }
