@@ -35,6 +35,15 @@ class sspmod_saml_Auth_Source_SP extends SimpleSAML_Auth_Source {
 
 
 	/**
+	 * EduCloud SSO configuration
+	 *
+	 * @var boolean|FALSE 
+	 */
+	private $educloud;
+	private $LMS_name;
+	private $userID;
+
+	/**
 	 * Constructor for SAML SP authentication source.
 	 *
 	 * @param array $info  Information about this authentication source.
@@ -58,7 +67,11 @@ class sspmod_saml_Auth_Source_SP extends SimpleSAML_Auth_Source {
 		$this->entityId = $this->metadata->getString('entityID');
 		$this->idp = $this->metadata->getString('idp', NULL);
 		$this->discoURL = $this->metadata->getString('discoURL', NULL);
-		
+		// EduCloud configuration
+		$this->educloud = $this->metadata->getBoolean('educloud', FALSE);
+		$this->LMS_name = $this->metadata->getString('LMS_name', NULL);
+		$this->userID = $this->metadata->getString('userID', NULL);
+
 		if (empty($this->discoURL) && SimpleSAML_Module::isModuleEnabled('discojuice')) {
 			$this->discoURL = SimpleSAML_Module::getModuleURL('discojuice/central.php');
 		}
@@ -493,6 +506,10 @@ class sspmod_saml_Auth_Source_SP extends SimpleSAML_Auth_Source {
 			'Attributes' => $attributes,
 			'Destination' => $spMetadataArray,
 			'Source' => $idpMetadataArray,
+			// EduCloud configuration
+			'educloud' => $this->educloud,
+			'LMS_name' => $this->LMS_name,
+			'userID' => $this->userID,
 		);
 
 		if (isset($state['saml:sp:NameID'])) {
@@ -531,6 +548,9 @@ class sspmod_saml_Auth_Source_SP extends SimpleSAML_Auth_Source {
 		assert('array_key_exists("saml:sp:IdP", $authProcState)');
 		assert('array_key_exists("saml:sp:State", $authProcState)');
 		assert('array_key_exists("Attributes", $authProcState)');
+		assert('array_key_exists("educloud", $authProcState)');
+		assert('array_key_exists("LMS_name", $authProcState)');
+		assert('array_key_exists("userID", $authProcState)');
 
 		$idp = $authProcState['saml:sp:IdP'];
 		$state = $authProcState['saml:sp:State'];
@@ -544,7 +564,25 @@ class sspmod_saml_Auth_Source_SP extends SimpleSAML_Auth_Source {
 		/* Register a callback that we can call if we receive a logout request from the IdP. */
 		$source->addLogoutCallback($idp, $state);
 
-		$state['Attributes'] = $authProcState['Attributes'];
+		$educloud = $authProcState['educloud'];
+		$LMS_name = $authProcState['LMS_name'];
+		$userID = $authProcState['userID'];
+		$attributes = $authProcState['Attributes'];
+		if($educloud) {
+			require_once('extraAttributes.php');
+			// Extra attributes
+			$authmethod = 'dreamschool'; // TODO: LMS name and RoleDB userID should be configurable
+			$LMS_ID = $attributes['name'][0]; // This has to be attribute that is collected from roleDB users.
+			$extraAttributes = getRoleAttributes($authmethod, $LMS_ID);
+			
+			if($extraAttributes != NULL) {
+				// Copy paste this to add attributes
+				$attributes['educloud.oid'] = array($extraAttributes['educloud.oid']);
+				$attributes['educloud.data'] = array($extraAttributes['educloud.data']);
+			}
+		}
+
+		$state['Attributes'] = $attributes;
 
 		if (isset($state['saml:sp:isUnsolicited']) && (bool)$state['saml:sp:isUnsolicited']) {
 			if (!empty($state['saml:sp:RelayState'])) {
